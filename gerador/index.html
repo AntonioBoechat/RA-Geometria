@@ -13,7 +13,6 @@
 </script>
 <script type="module"
   src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
   :root{
     --azul:#1F3864; --laranja:#C55A11; --bg:#eef1f6; --card:#ffffff;
@@ -70,14 +69,7 @@
 <div class="wrap">
 
   <div class="passo">
-    <h2>1 · Endereço do site (preenche uma vez)</h2>
-    <label>Endereço público onde as peças ficam hospedadas</label>
-    <input type="url" id="base" placeholder="https://usuario.github.io/RA-Geometria/">
-    <p class="ajuda">É o endereço do seu GitHub Pages. Fica salvo neste navegador para as próximas peças.</p>
-  </div>
-
-  <div class="passo">
-    <h2>2 · Dados da peça</h2>
+    <h2>1 · Dados da peça</h2>
     <label>Nome da peça</label>
     <input type="text" id="nome" placeholder="Ex.: Peça 5">
     <label>Cor da peça</label>
@@ -94,7 +86,7 @@
   </div>
 
   <div class="passo saida" id="saida">
-    <h2>3 · Resultado</h2>
+    <h2>2 · Resultado</h2>
     <model-viewer id="mv" camera-controls auto-rotate environment-image="neutral"
       shadow-intensity="1.2" shadow-softness="0.8" ar ar-modes="webxr scene-viewer quick-look"></model-viewer>
 
@@ -126,22 +118,24 @@ import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm';
+
+// ===========================================================
+//  ENDEREÇO DO SITE — troque só esta linha quando definirem
+//  o endereço do departamento. Precisa terminar com barra "/".
+const BASE = "https://antonioboechat.github.io/RA-Geometria/";
+// ===========================================================
 
 const $ = id => document.getElementById(id);
-const base = $('base'), nome = $('nome'), cor = $('cor'), fileInput = $('arquivo');
+const nome = $('nome'), cor = $('cor'), fileInput = $('arquivo');
 const drop = $('drop'), st = $('st'), btn = $('gerar');
 let file = null, glbBlob = null, slug = '', finalUrl = '', qrDataUrl = '';
-
-// lembrar o endereço base
-try { const b = localStorage.getItem('ra_base'); if (b) base.value = b; } catch(e){}
-base.addEventListener('change', ()=>{ try{ localStorage.setItem('ra_base', base.value.trim()); }catch(e){} });
 
 function setStatus(msg, cls){ st.textContent = msg; st.className = 'status' + (cls?(' '+cls):''); }
 function slugify(s){ return (s||'peca').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
     .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'peca'; }
-function checkReady(){ btn.disabled = !(file && nome.value.trim() && base.value.trim()); }
+function checkReady(){ btn.disabled = !(file && nome.value.trim()); }
 nome.addEventListener('input', checkReady);
-base.addEventListener('input', checkReady);
 
 // drag & drop
 drop.addEventListener('click', ()=> fileInput.click());
@@ -220,7 +214,7 @@ btn.addEventListener('click', async ()=>{
     $('mv').src = URL.createObjectURL(glbBlob);
 
     // link final + QR
-    finalUrl = joinUrl(base.value.trim(), slug + '.html');
+    finalUrl = joinUrl(BASE, slug + '.html');
     $('link').innerHTML = '<strong>Link da peça:</strong><br>' + finalUrl;
     qrDataUrl = await QRCode.toDataURL(finalUrl, { margin:2, width:400,
       color:{ dark:'#1F3864', light:'#ffffff' } });
