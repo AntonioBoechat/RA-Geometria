@@ -93,16 +93,23 @@
     <div class="qrbox"><img id="qr" alt="QR da peça"></div>
     <div class="linkbox" id="link"></div>
 
+    <div id="pubBox" style="display:none; margin-top:14px;">
+      <label>Senha de publicação</label>
+      <input type="password" id="senha" placeholder="senha definida no porteiro">
+      <button class="btn" id="publicar" style="margin-top:8px;">Publicar agora</button>
+      <p class="status" id="pubSt"></p>
+    </div>
+
     <div class="dls">
-      <button class="btn" id="dlPagina">Baixar página (.html)</button>
-      <button class="btn" id="dlModelo">Baixar modelo (.glb)</button>
+      <button class="btn sec" id="dlPagina">Baixar página (.html)</button>
+      <button class="btn sec" id="dlModelo">Baixar modelo (.glb)</button>
       <button class="btn sec" id="dlQr">Baixar QR (.png)</button>
     </div>
 
-    <div class="ajuda">
-      <strong>Para publicar esta peça:</strong>
+    <div class="ajuda" id="ajudaManual">
+      <strong>Publicação manual (alternativa):</strong>
       <ol>
-        <li>No seu repositório do GitHub, clique em <code>Add file › Upload files</code>.</li>
+        <li>No repositório do GitHub, clique em <code>Add file › Upload files</code>.</li>
         <li>Arraste os <strong>dois</strong> arquivos baixados (a página e o modelo).</li>
         <li>Clique em <code>Commit changes</code>. Em 1 a 2 minutos o link e o QR acima já funcionam.</li>
       </ol>
@@ -124,6 +131,9 @@ import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm';
 //  ENDEREÇO DO SITE — troque só esta linha quando definirem
 //  o endereço do departamento. Precisa terminar com barra "/".
 const BASE = "https://antonioboechat.github.io/RA-Geometria/";
+// Endereço do porteiro (Cloudflare Worker) que publica sozinho.
+// Deixe "" para desligar a publicação automática (só downloads).
+const WORKER_URL = "";
 // ===========================================================
 
 const $ = id => document.getElementById(id);
@@ -221,7 +231,8 @@ btn.addEventListener('click', async ()=>{
     $('qr').src = qrDataUrl;
 
     $('saida').style.display = 'block';
-    setStatus('Pronto! Baixe os dois arquivos e publique.', 'ok');
+    if (WORKER_URL) $('pubBox').style.display = 'block';
+    setStatus('Pronto! Publique a peça abaixo.', 'ok');
     $('saida').scrollIntoView({ behavior:'smooth' });
   }catch(err){
     console.error(err);
@@ -235,6 +246,35 @@ $('dlPagina').addEventListener('click', ()=> download(
 $('dlModelo').addEventListener('click', ()=> download(glbBlob, slug + '.glb'));
 $('dlQr').addEventListener('click', ()=>{ const a=document.createElement('a');
   a.href=qrDataUrl; a.download='qr-'+slug+'.png'; a.click(); });
+
+// --- publicação automática via porteiro (Cloudflare Worker) ---
+const senha = $('senha');
+try { const s = localStorage.getItem('ra_senha'); if (s && senha) senha.value = s; } catch(e){}
+
+function blobToBase64(blob){ return new Promise((res,rej)=>{ const r=new FileReader();
+  r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(blob); }); }
+
+$('publicar').addEventListener('click', async ()=>{
+  if(!WORKER_URL) return;
+  const pubSt = $('pubSt'), btnP = $('publicar');
+  try{
+    try{ localStorage.setItem('ra_senha', senha.value); }catch(e){}
+    btnP.disabled = true;
+    pubSt.className='status'; pubSt.textContent='Publicando…';
+    const glbBase64 = await blobToBase64(glbBlob);
+    const resp = await fetch(WORKER_URL, { method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ senha:senha.value, nome:nome.value.trim(), slug, glbBase64 }) });
+    const data = await resp.json().catch(()=>({}));
+    if(!resp.ok) throw new Error(data.error || ('erro '+resp.status));
+    pubSt.className='status ok';
+    pubSt.textContent='Publicado! Em 1 a 2 minutos o link e o QR acima já funcionam.';
+    btnP.textContent='Publicado';
+  }catch(err){
+    pubSt.className='status erro'; pubSt.textContent='Não publicou: '+(err.message||err);
+    btnP.disabled=false;
+  }
+});
 </script>
 </body>
 </html>
