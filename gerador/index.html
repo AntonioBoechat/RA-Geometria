@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gerador RA</title>
+<meta name="description" content="Gerador de peças em Realidade Aumentada para Geometria Descritiva">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module"
+  src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+  :root{
+    --azul:#1F3864; --laranja:#C55A11; --bg:#eef1f6; --card:#ffffff;
+    --borda:#d7dce4; --texto:#1F3864; --suave:#56617a; --ok:#1e7d4f; --erro:#b23b3b;
+  }
+  :root:not([data-theme="light"]){ @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f141b; --card:#19202a; --borda:#2a333f; --texto:#e8edf4; --suave:#9fabbd; }
+  }}
+  :root[data-theme="dark"]{ --bg:#0f141b; --card:#19202a; --borda:#2a333f; --texto:#e8edf4; --suave:#9fabbd; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--texto);
+        font-family:Arial,Helvetica,sans-serif; line-height:1.5; }
+  header{ background:var(--azul); color:#fff; padding:18px 20px; }
+  header h1{ margin:0; font-size:20px; }
+  header p{ margin:5px 0 0; font-size:13px; opacity:.85; }
+  .wrap{ max-width:720px; margin:0 auto; padding:18px 16px 40px; }
+  .passo{ background:var(--card); border:1px solid var(--borda); border-radius:12px;
+          padding:16px 18px; margin:14px 0; }
+  .passo h2{ margin:0 0 10px; font-size:15px; color:var(--laranja); }
+  label{ display:block; font-size:13px; color:var(--suave); margin:10px 0 4px; }
+  input[type=text], input[type=url]{ width:100%; padding:11px 12px; font-size:15px;
+      border:1px solid var(--borda); border-radius:8px; background:var(--bg); color:var(--texto); }
+  input[type=color]{ width:54px; height:38px; border:1px solid var(--borda);
+      border-radius:8px; background:var(--card); padding:2px; vertical-align:middle; }
+  .drop{ border:2px dashed var(--borda); border-radius:10px; padding:22px; text-align:center;
+      color:var(--suave); font-size:14px; cursor:pointer; background:var(--bg); }
+  .drop.hover{ border-color:var(--laranja); color:var(--texto); }
+  .drop strong{ color:var(--texto); }
+  .btn{ background:var(--laranja); color:#fff; border:none; border-radius:9px;
+      padding:13px 18px; font-size:15px; cursor:pointer; width:100%; margin-top:6px; }
+  .btn:disabled{ opacity:.5; cursor:default; }
+  .btn.sec{ background:var(--azul); }
+  .status{ font-size:13.5px; margin:10px 2px; min-height:20px; }
+  .status.ok{ color:var(--ok); } .status.erro{ color:var(--erro); }
+  model-viewer{ width:100%; height:48vh; border:1px solid var(--borda); border-radius:10px;
+      background:radial-gradient(circle at 50% 35%, #eef2f7 0%, #cfd7e2 100%); margin-top:8px; }
+  .saida{ display:none; }
+  .qrbox{ text-align:center; margin-top:12px; }
+  .qrbox img{ width:200px; height:200px; border:1px solid var(--borda); border-radius:8px; background:#fff; }
+  .linkbox{ word-break:break-all; font-size:13px; background:var(--bg); border:1px solid var(--borda);
+      border-radius:8px; padding:10px; margin-top:10px; }
+  .dls{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  .dls .btn{ width:auto; flex:1 1 200px; }
+  .ajuda{ font-size:12.5px; color:var(--suave); margin-top:8px; }
+  ol{ margin:8px 0 0; padding-left:20px; font-size:13.5px; } ol li{ margin:4px 0; }
+  code{ background:var(--bg); border:1px solid var(--borda); border-radius:5px; padding:1px 5px; font-size:12.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Gerador de Peças em RA</h1>
+  <p>Geometria Descritiva · converte o arquivo, gera a página e o QR</p>
+</header>
+<div class="wrap">
+
+  <div class="passo">
+    <h2>1 · Endereço do site (preenche uma vez)</h2>
+    <label>Endereço público onde as peças ficam hospedadas</label>
+    <input type="url" id="base" placeholder="https://usuario.github.io/RA-Geometria/">
+    <p class="ajuda">É o endereço do seu GitHub Pages. Fica salvo neste navegador para as próximas peças.</p>
+  </div>
+
+  <div class="passo">
+    <h2>2 · Dados da peça</h2>
+    <label>Nome da peça</label>
+    <input type="text" id="nome" placeholder="Ex.: Peça 5">
+    <label>Cor da peça</label>
+    <input type="color" id="cor" value="#2338cf">
+    <span class="ajuda" style="margin-left:8px">Uma cor sólida ajuda a enxergar o volume.</span>
+    <label style="margin-top:12px">Arquivo 3D da peça</label>
+    <div class="drop" id="drop">
+      Arraste aqui ou <strong>clique para escolher</strong><br>
+      <span class="ajuda">Aceita FBX, STL, OBJ ou glb/gltf</span>
+      <input type="file" id="arquivo" accept=".fbx,.stl,.obj,.glb,.gltf" hidden>
+    </div>
+    <p class="status" id="st"></p>
+    <button class="btn" id="gerar" disabled>Gerar peça em RA</button>
+  </div>
+
+  <div class="passo saida" id="saida">
+    <h2>3 · Resultado</h2>
+    <model-viewer id="mv" camera-controls auto-rotate environment-image="neutral"
+      shadow-intensity="1.2" shadow-softness="0.8" ar ar-modes="webxr scene-viewer quick-look"></model-viewer>
+
+    <div class="qrbox"><img id="qr" alt="QR da peça"></div>
+    <div class="linkbox" id="link"></div>
+
+    <div class="dls">
+      <button class="btn" id="dlPagina">Baixar página (.html)</button>
+      <button class="btn" id="dlModelo">Baixar modelo (.glb)</button>
+      <button class="btn sec" id="dlQr">Baixar QR (.png)</button>
+    </div>
+
+    <div class="ajuda">
+      <strong>Para publicar esta peça:</strong>
+      <ol>
+        <li>No seu repositório do GitHub, clique em <code>Add file › Upload files</code>.</li>
+        <li>Arraste os <strong>dois</strong> arquivos baixados (a página e o modelo).</li>
+        <li>Clique em <code>Commit changes</code>. Em 1 a 2 minutos o link e o QR acima já funcionam.</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+
+const $ = id => document.getElementById(id);
+const base = $('base'), nome = $('nome'), cor = $('cor'), fileInput = $('arquivo');
+const drop = $('drop'), st = $('st'), btn = $('gerar');
+let file = null, glbBlob = null, slug = '', finalUrl = '', qrDataUrl = '';
+
+// lembrar o endereço base
+try { const b = localStorage.getItem('ra_base'); if (b) base.value = b; } catch(e){}
+base.addEventListener('change', ()=>{ try{ localStorage.setItem('ra_base', base.value.trim()); }catch(e){} });
+
+function setStatus(msg, cls){ st.textContent = msg; st.className = 'status' + (cls?(' '+cls):''); }
+function slugify(s){ return (s||'peca').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'peca'; }
+function checkReady(){ btn.disabled = !(file && nome.value.trim() && base.value.trim()); }
+nome.addEventListener('input', checkReady);
+base.addEventListener('input', checkReady);
+
+// drag & drop
+drop.addEventListener('click', ()=> fileInput.click());
+;['dragover','dragenter'].forEach(ev=> drop.addEventListener(ev, e=>{ e.preventDefault(); drop.classList.add('hover'); }));
+;['dragleave','drop'].forEach(ev=> drop.addEventListener(ev, e=>{ e.preventDefault(); drop.classList.remove('hover'); }));
+drop.addEventListener('drop', e=>{ if(e.dataTransfer.files[0]) pickFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', ()=>{ if(fileInput.files[0]) pickFile(fileInput.files[0]); });
+function pickFile(f){ file = f; setStatus('Arquivo: ' + f.name); drop.querySelector('strong').textContent = f.name; checkReady(); }
+
+// aplica uma cor sólida a todas as malhas (garante visibilidade)
+function paint(obj){
+  const c = new THREE.Color(cor.value);
+  obj.traverse(n=>{ if(n.isMesh){
+    n.material = new THREE.MeshStandardMaterial({ color:c, metalness:0.0, roughness:0.5, side:THREE.DoubleSide });
+    if(n.geometry && !n.geometry.attributes.normal) n.geometry.computeVertexNormals();
+  }});
+}
+
+function readAs(f, how){ return new Promise((res,rej)=>{ const r=new FileReader();
+  r.onload=()=>res(r.result); r.onerror=rej; how==='text'? r.readAsText(f) : r.readAsArrayBuffer(f); }); }
+
+async function toObject(f){
+  const ext = f.name.split('.').pop().toLowerCase();
+  if(ext==='glb' || ext==='gltf'){
+    const buf = await readAs(f,'buffer');
+    const gltf = await new GLTFLoader().parseAsync(buf, '');
+    return gltf.scene;
+  }
+  if(ext==='fbx'){ const buf = await readAs(f,'buffer'); return new FBXLoader().parse(buf, ''); }
+  if(ext==='obj'){ const txt = await readAs(f,'text'); return new OBJLoader().parse(txt); }
+  if(ext==='stl'){ const buf = await readAs(f,'buffer');
+    const geo = new STLLoader().parse(buf);
+    return new THREE.Mesh(geo, new THREE.MeshStandardMaterial()); }
+  throw new Error('Formato não suportado: .' + ext);
+}
+
+function exportGlb(obj){ return new Promise((res,rej)=>{
+  new GLTFExporter().parse(obj, r=> res(new Blob([r], {type:'model/gltf-binary'})),
+    err=> rej(err), { binary:true }); }); }
+
+function paginaHtml(titulo, glbNome){
+  return `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${titulo}</title>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"><\/script>
+<style>body{margin:0;font-family:Arial,sans-serif;background:#0f141b;color:#fff}
+header{background:#1F3864;padding:16px 20px}header h1{margin:0;font-size:18px}
+model-viewer{width:100%;height:84vh;background:radial-gradient(circle at 50% 35%,#eef2f7 0%,#cfd7e2 100%)}
+.b{position:absolute;bottom:16px;right:16px;background:#C55A11;color:#fff;border:none;border-radius:8px;padding:12px 16px;font-size:15px}</style>
+</head><body>
+<header><h1>${titulo} — Realidade Aumentada</h1></header>
+<model-viewer src="${glbNome}" alt="${titulo}" camera-controls auto-rotate
+  environment-image="neutral" shadow-intensity="1.2" shadow-softness="0.8"
+  ar ar-modes="webxr scene-viewer quick-look">
+  <button slot="ar-button" class="b">Ver em RA na sala</button>
+</model-viewer>
+</body></html>`;
+}
+
+function joinUrl(b, f){ return b.replace(/\/+$/,'') + '/' + f; }
+function download(blob, name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000); }
+
+btn.addEventListener('click', async ()=>{
+  try{
+    btn.disabled = true;
+    setStatus('Lendo e convertendo o arquivo… (FBX pode levar alguns segundos)');
+    slug = slugify(nome.value);
+    const obj = await toObject(file);
+    paint(obj);
+    setStatus('Exportando para glb…');
+    glbBlob = await exportGlb(obj);
+
+    // preview
+    $('mv').src = URL.createObjectURL(glbBlob);
+
+    // link final + QR
+    finalUrl = joinUrl(base.value.trim(), slug + '.html');
+    $('link').innerHTML = '<strong>Link da peça:</strong><br>' + finalUrl;
+    qrDataUrl = await QRCode.toDataURL(finalUrl, { margin:2, width:400,
+      color:{ dark:'#1F3864', light:'#ffffff' } });
+    $('qr').src = qrDataUrl;
+
+    $('saida').style.display = 'block';
+    setStatus('Pronto! Baixe os dois arquivos e publique.', 'ok');
+    $('saida').scrollIntoView({ behavior:'smooth' });
+  }catch(err){
+    console.error(err);
+    setStatus('Erro ao processar: ' + (err.message||err), 'erro');
+    btn.disabled = false;
+  }
+});
+
+$('dlPagina').addEventListener('click', ()=> download(
+  new Blob([paginaHtml(nome.value.trim(), slug + '.glb')], {type:'text/html'}), slug + '.html'));
+$('dlModelo').addEventListener('click', ()=> download(glbBlob, slug + '.glb'));
+$('dlQr').addEventListener('click', ()=>{ const a=document.createElement('a');
+  a.href=qrDataUrl; a.download='qr-'+slug+'.png'; a.click(); });
+</script>
+</body>
+</html>
