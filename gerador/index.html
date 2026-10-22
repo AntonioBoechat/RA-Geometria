@@ -15,8 +15,9 @@
   src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
 <style>
   :root{
-    --azul:#1F3864; --laranja:#C55A11; --bg:#eef1f6; --card:#ffffff;
-    --borda:#d7dce4; --texto:#1F3864; --suave:#56617a; --ok:#1e7d4f; --erro:#b23b3b;
+    --azul:#003060; --azul2:#0a4f91; --ouro:#C8A24B; --laranja:#003060;
+    --bg:#eef1f6; --card:#ffffff;
+    --borda:#d7dce4; --texto:#003060; --suave:#56617a; --ok:#1e7d4f; --erro:#b23b3b;
   }
   :root:not([data-theme="light"]){ @media (prefers-color-scheme: dark){
     :root{ --bg:#0f141b; --card:#19202a; --borda:#2a333f; --texto:#e8edf4; --suave:#9fabbd; }
@@ -25,9 +26,11 @@
   *{ box-sizing:border-box; }
   body{ margin:0; background:var(--bg); color:var(--texto);
         font-family:Arial,Helvetica,sans-serif; line-height:1.5; }
-  header{ background:var(--azul); color:#fff; padding:18px 20px; }
-  header h1{ margin:0; font-size:20px; }
-  header p{ margin:5px 0 0; font-size:13px; opacity:.85; }
+  header{ background:#fff; color:var(--azul); padding:12px 18px; display:flex;
+          align-items:center; gap:14px; border-bottom:3px solid var(--azul); }
+  header .logo{ height:46px; width:auto; }
+  header .tit strong{ display:block; font-size:18px; line-height:1.2; }
+  header .tit span{ font-size:12px; color:var(--suave); }
   .wrap{ max-width:720px; margin:0 auto; padding:18px 16px 40px; }
   .passo{ background:var(--card); border:1px solid var(--borda); border-radius:12px;
           padding:16px 18px; margin:14px 0; }
@@ -41,10 +44,10 @@
       color:var(--suave); font-size:14px; cursor:pointer; background:var(--bg); }
   .drop.hover{ border-color:var(--laranja); color:var(--texto); }
   .drop strong{ color:var(--texto); }
-  .btn{ background:var(--laranja); color:#fff; border:none; border-radius:9px;
-      padding:13px 18px; font-size:15px; cursor:pointer; width:100%; margin-top:6px; }
+  .btn{ background:var(--ouro); color:var(--azul); border:none; border-radius:9px;
+      padding:13px 18px; font-size:15px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px; }
   .btn:disabled{ opacity:.5; cursor:default; }
-  .btn.sec{ background:var(--azul); }
+  .btn.sec{ background:var(--azul); color:#fff; font-weight:normal; }
   .status{ font-size:13.5px; margin:10px 2px; min-height:20px; }
   .status.ok{ color:var(--ok); } .status.erro{ color:var(--erro); }
   model-viewer{ width:100%; height:48vh; border:1px solid var(--borda); border-radius:10px;
@@ -63,8 +66,11 @@
 </head>
 <body>
 <header>
-  <h1>Gerador de Peças em RA</h1>
-  <p>Geometria Descritiva · converte o arquivo, gera a página e o QR</p>
+  <img class="logo" src="../assets/ufrj.png" alt="UFRJ">
+  <div class="tit">
+    <strong>Gerador de Peças em RA</strong>
+    <span>Geometria Descritiva · Escola Politécnica · UFRJ</span>
+  </div>
 </header>
 <div class="wrap">
 
@@ -192,12 +198,13 @@ function paginaHtml(titulo, glbNome){
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${titulo}</title>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"><\/script>
-<style>body{margin:0;font-family:Arial,sans-serif;background:#0f141b;color:#fff}
-header{background:#1F3864;padding:16px 20px}header h1{margin:0;font-size:18px}
-model-viewer{width:100%;height:84vh;background:radial-gradient(circle at 50% 35%,#eef2f7 0%,#cfd7e2 100%)}
-.b{position:absolute;bottom:16px;right:16px;background:#C55A11;color:#fff;border:none;border-radius:8px;padding:12px 16px;font-size:15px}</style>
+<style>body{margin:0;font-family:Arial,sans-serif;background:#eef1f6;color:#003060}
+header{background:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;border-bottom:3px solid #003060}
+header img{height:40px}header .t strong{display:block;font-size:16px;line-height:1.2}header .t span{font-size:11px;color:#56617a}
+model-viewer{width:100%;height:82vh;background:radial-gradient(circle at 50% 35%,#eef2f7 0%,#cfd7e2 100%)}
+.b{position:absolute;bottom:16px;right:16px;background:#C8A24B;color:#003060;border:none;border-radius:8px;padding:12px 16px;font-size:15px;font-weight:bold}</style>
 </head><body>
-<header><h1>${titulo} — Realidade Aumentada</h1></header>
+<header><img src="assets/ufrj.png" alt="UFRJ"><div class="t"><strong>${titulo}</strong><span>Realidade Aumentada · Geometria Descritiva · UFRJ</span></div></header>
 <model-viewer src="${glbNome}" alt="${titulo}" camera-controls auto-rotate
   environment-image="neutral" shadow-intensity="1.2" shadow-softness="0.8"
   ar ar-modes="webxr scene-viewer quick-look">
@@ -262,9 +269,10 @@ $('publicar').addEventListener('click', async ()=>{
     btnP.disabled = true;
     pubSt.className='status'; pubSt.textContent='Publicando…';
     const glbBase64 = await blobToBase64(glbBlob);
+    const pageBase64 = btoa(unescape(encodeURIComponent(paginaHtml(nome.value.trim(), slug + '.glb'))));
     const resp = await fetch(WORKER_URL, { method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ senha:senha.value, nome:nome.value.trim(), slug, glbBase64 }) });
+      body: JSON.stringify({ senha:senha.value, slug, glbBase64, pageBase64 }) });
     const data = await resp.json().catch(()=>({}));
     if(!resp.ok) throw new Error(data.error || ('erro '+resp.status));
     pubSt.className='status ok';
