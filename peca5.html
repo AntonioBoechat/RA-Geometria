@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Peça5</title>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<style>body{margin:0;font-family:Arial,sans-serif;background:#eef1f6;color:#003060}
+header{background:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;border-bottom:3px solid #003060}
+header img{height:40px}header .t strong{display:block;font-size:16px;line-height:1.2}header .t span{font-size:11px;color:#56617a}
+model-viewer{width:100%;height:82vh;background:radial-gradient(circle at 50% 35%,#eef2f7 0%,#cfd7e2 100%)}
+.b{position:absolute;bottom:16px;right:16px;background:#C8A24B;color:#003060;border:none;border-radius:8px;padding:12px 16px;font-size:15px;font-weight:bold}</style>
+</head><body>
+<header><img src="assets/ufrj.png" alt="UFRJ"><div class="t"><strong>Peça5</strong><span>Realidade Aumentada · Geometria Descritiva · UFRJ</span></div></header>
+<model-viewer src="peca5.glb" alt="Peça5" camera-controls auto-rotate
+  environment-image="neutral" shadow-intensity="1.2" shadow-softness="0.8"
+  ar ar-modes="webxr scene-viewer quick-look">
+  <button slot="ar-button" class="b">Ver em RA na sala</button>
+</model-viewer>
+</body></html>
